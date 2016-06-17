@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Kaletsch Team Site Kicktipp Result
 // @namespace    http://www.kaletsch-medien.de/
-// @version      1.1
+// @version      1.2
 // @description  Zeigt aktuelle Kicktipp-Punkte auf Team-Seite, vergessene Tipps blinken (param game=1)
 // @updateURL    https://github.com/DerVO/KicktippResultTeamSite/raw/master/KaletschTeamSiteKicktippResult.user.js
 // @downloadURL  https://github.com/DerVO/KicktippResultTeamSite/raw/master/KaletschTeamSiteKicktippResult.user.js

@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Kaletsch Team Site Kicktipp Result
 // @namespace    http://www.kaletsch-medien.de/
-// @version      1.3
+// @version      1.4
 // @description  Zeigt aktuelle Kicktipp-Punkte auf Team-Seite, vergessene Tipps blinken (param game=1)
 // @updateURL    https://github.com/DerVO/KicktippResultTeamSite/raw/master/KaletschTeamSiteKicktippResult.user.js
 // @downloadURL  https://github.com/DerVO/KicktippResultTeamSite/raw/master/KaletschTeamSiteKicktippResult.user.js
@@ -13,7 +13,7 @@
 
 /*
 Unterstuetze URL Parameter
-nextgame=[x,]y - überschreibe Auto Erkennung für Spieltag und Spiel, x = Spieltag (1..n), y = Spiel (1..n)
+game=[x,]y - überschreibe Auto Erkennung für Spieltag und Spiel, x = Spieltag (1..n), y = Spiel (1..n)
 dontblink=1 - roter Layer blinkt nicht
 hidepoints=1 - zeige nicht die Punkte
 hidenames=1 - blende die Namen aus
@@ -69,9 +69,9 @@ Beispiel: http://www.kaletsch-medien.de/uber-uns/?nextgame=1&hidepoints=1&hidena
     var dont_blink = Boolean(parseInt(getUrlParameter('dontblink')));
     var distraction_free = Boolean(parseInt(getUrlParameter('distractionfree')));
 
-    var nextgame, override_spieltag, override_game;
-    if ($.type(nextgame = getUrlParameter('nextgame')) === 'string') {
-        var Parts = nextgame.split(',');
+    var game_url, override_spieltag, override_game;
+    if ($.type(game_url = getUrlParameter('game')) === 'string') {
+        var Parts = game_url.split(',');
         if (Parts.length == 2) {
             override_spieltag = parseInt(Parts[0]);
             override_game = parseInt(Parts[1]);
@@ -79,7 +79,6 @@ Beispiel: http://www.kaletsch-medien.de/uber-uns/?nextgame=1&hidepoints=1&hidena
             override_game = parseInt(Parts[0]);
         }
     }
-    console.log(override_spieltag, override_game);
 
     GM_addStyle(`
 		@keyframes blink {
@@ -108,6 +107,22 @@ Beispiel: http://www.kaletsch-medien.de/uber-uns/?nextgame=1&hidepoints=1&hidena
             -webkit-text-stroke-width: 5px;
             -webkit-text-stroke-color: black;
         }
+
+        div.tipp {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            width: 100%;
+            text-align: center;
+            font-size:33%;
+            line-height:100%;
+            color:hsla(0, 0%, 50%, 0.67);
+            -webkit-text-stroke-width: 3px;
+            -webkit-text-stroke-color: black;
+        }
+        div.tipp.punkte-2 { color:hsla(60, 67%, 50%, 0.85); }
+        div.tipp.punkte-3 { color:hsla(90, 67%, 50%, 0.85); }
+        div.tipp.punkte-4 { color:hsla(120, 67%, 50%, 0.85); }
 
         div.redLayer {
             position: absolute;
@@ -196,11 +211,11 @@ Beispiel: http://www.kaletsch-medien.de/uber-uns/?nextgame=1&hidepoints=1&hidena
         });
 
         // get the next Game, get the current game
-        var nextGameIdx, nextGame, currentGameIdx, currentGame;
+        var showGameIdx, showGame;
         Games.forEach(function(Game, idx) {
-            if (nextGameIdx === undefined && !Game.spiel_abgeschlossen) {nextGameIdx = idx; nextGame = Games[nextGameIdx];}
+            if (showGameIdx === undefined && !Game.spiel_abgeschlossen) {showGameIdx = idx; showGame = Games[showGameIdx];}
         });
-        if (!isNaN(override_game)) {nextGameIdx = override_game - 1; nextGame = Games[nextGameIdx];}
+        if (!isNaN(override_game)) {showGameIdx = override_game - 1; showGame = Games[showGameIdx];}
 
         // read in points zu mitarbeiterList
         var pktMin;
@@ -211,8 +226,13 @@ Beispiel: http://www.kaletsch-medien.de/uber-uns/?nextgame=1&hidepoints=1&hidena
             var name = $tr.find('td.mg_class').text();
             var pkt = parseInt($tr.find('td.pkt:last').text());
             var id = $(this).attr("class").match(/teilnehmer(\d+)/)[1];
-            var getippt;
-            if (nextGameIdx !== undefined) getippt = $.trim($tr.find('td:eq(' + (nextGameIdx+3) + ')').text()) !== ''; // starting with 4th col
+            var getippt, tipp, tippPkt;
+            if (showGameIdx !== undefined) {
+                var $tippTd = $tr.find('td:eq(' + (showGameIdx+3) + ')'); // starting with 4th col
+                tippPkt = parseInt($tippTd.find('sub').text());
+                tipp = $tippTd.clone().children().remove().end().text(); // text without children // http://stackoverflow.com/a/8851526/1037640
+                getippt = (tipp !== '');
+            }
             tippsMissing += getippt === false ? 1 : 0;
 
             mitarbeiterList.forEach(function(mitarbeiter) {
@@ -220,6 +240,8 @@ Beispiel: http://www.kaletsch-medien.de/uber-uns/?nextgame=1&hidepoints=1&hidena
                     mitarbeiter.kicktippPkt = pkt;
                     mitarbeiter.kicktippName = name;
                     mitarbeiter.kicktippGetippt = getippt;
+                    mitarbeiter.kicktippTipp = tipp;
+                    mitarbeiter.kicktippTippPkt = tippPkt;
                 }
                 // set min and max points current in the game
                 if (typeof pktMin == 'undefined') {
@@ -233,11 +255,18 @@ Beispiel: http://www.kaletsch-medien.de/uber-uns/?nextgame=1&hidepoints=1&hidena
             });
         });
 
-        // Show next game in title
-        if (nextGame !== undefined) {
-            var headline = nextGame.teamA + ' - ' + nextGame.teamB;
-            headline += '<br />' + nextGame.uhrzeit + ' Uhr';
-            headline += '<br />(<span id="countdown" data-startzeit="' + nextGame.termin + '"></span>)';
+        // Show game in title
+        if (showGame !== undefined) {
+            var headline = showGame.teamA + ' - ' + showGame.teamB;
+            if (showGame.spiel_laeuft) {
+                headline += '<br /><span class="red">' + showGame.result + '</span>';
+                headline += '<br />(<span id="countdown" data-startzeit="' + showGame.termin + '"></span>)';
+            } else if (showGame.spiel_abgeschlossen) {
+                headline += '<br />' + showGame.result + '';
+            } else {
+                headline += '<br />' + showGame.uhrzeit + ' Uhr';
+                headline += '<br />(<span id="countdown" data-startzeit="' + showGame.termin + '"></span>)';
+            }
             if (tippsMissing > 0) {
                 headline += ' <br /><span class="red blink">' + tippsMissing + ' tipp(s) missing</span>';
             } else {
@@ -275,10 +304,18 @@ Beispiel: http://www.kaletsch-medien.de/uber-uns/?nextgame=1&hidepoints=1&hidena
                 var pkt_scale = (mitarbeiter.kicktippPkt - pktMin) / (pktMax - pktMin); // min = 0, max = 1, dazwischen linear
                 var hue = Math.floor(pkt_scale * 120);
                 var $div = $('<div/>').text(mitarbeiter.kicktippPkt).addClass('points').css({
-                    'font-size': (img_height/1.5) + 'px',
+                    'font-size': (img_height/1.6) + 'px',
                     'line-height': (img_height) + 'px',
                     color: 'hsla('+hue+', 67%, 50%, 0.85)'
                 });
+
+                // Live-Spiel
+                if (showGame !== undefined && mitarbeiter.kicktippTipp) {
+                    var $tipp = $('<div />').text(mitarbeiter.kicktippTipp).addClass('tipp');
+                    if (!isNaN(mitarbeiter.kicktippTippPkt)) $tipp.addClass('punkte-' + mitarbeiter.kicktippTippPkt).append('<small>+' + mitarbeiter.kicktippTippPkt + '</small>');
+                    $div.append($tipp);
+                }
+
                 $mitarbeiterDiv.find('div.responsive-image').append($div);
             } else {
                 //console.log('Mitarbeiter ' + name + ' in Tippspiel nicht gefunden. Graue sein Bild aus.');

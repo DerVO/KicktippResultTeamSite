@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Kaletsch Team Site Kicktipp Result
 // @namespace    http://www.kaletsch-medien.de/
-// @version      1.4
+// @version      1.5
 // @description  Zeigt aktuelle Kicktipp-Punkte auf Team-Seite, vergessene Tipps blinken (param game=1)
 // @updateURL    https://github.com/DerVO/KicktippResultTeamSite/raw/master/KaletschTeamSiteKicktippResult.user.js
 // @downloadURL  https://github.com/DerVO/KicktippResultTeamSite/raw/master/KaletschTeamSiteKicktippResult.user.js
@@ -115,11 +115,12 @@ Beispiel: http://www.kaletsch-medien.de/uber-uns/?nextgame=1&hidepoints=1&hidena
             width: 100%;
             text-align: center;
             font-size:33%;
-            line-height:100%;
+            line-height:125%;
             color:hsla(0, 0%, 50%, 0.67);
             -webkit-text-stroke-width: 3px;
             -webkit-text-stroke-color: black;
         }
+        div.tipp.oben { top:0; /*padding-right:.67em;*/ }
         div.tipp.punkte-2 { color:hsla(60, 67%, 50%, 0.85); }
         div.tipp.punkte-3 { color:hsla(90, 67%, 50%, 0.85); }
         div.tipp.punkte-4 { color:hsla(120, 67%, 50%, 0.85); }
@@ -139,6 +140,7 @@ Beispiel: http://www.kaletsch-medien.de/uber-uns/?nextgame=1&hidepoints=1&hidena
         span.green {
             color: hsla(120, 67%, 50%, 1);
         }
+        .visiblyhidden {visibility: hidden}
     `);
 
     // nicht blinken, wenn dontblink gesetzt
@@ -310,9 +312,15 @@ Beispiel: http://www.kaletsch-medien.de/uber-uns/?nextgame=1&hidepoints=1&hidena
                 });
 
                 // Live-Spiel
-                if (showGame !== undefined && mitarbeiter.kicktippTipp) {
+                if (showGame !== undefined && (showGame.spiel_abgeschlossen || showGame.spiel_laeuft) && mitarbeiter.kicktippTipp) {
                     var $tipp = $('<div />').text(mitarbeiter.kicktippTipp).addClass('tipp');
-                    if (!isNaN(mitarbeiter.kicktippTippPkt)) $tipp.addClass('punkte-' + mitarbeiter.kicktippTippPkt).append('<small>+' + mitarbeiter.kicktippTippPkt + '</small>');
+                    //if (!isNaN(mitarbeiter.kicktippTippPkt)) $tipp.addClass('punkte-' + mitarbeiter.kicktippTippPkt).append('<small>+' + mitarbeiter.kicktippTippPkt + '</small>');
+
+                    if (!isNaN(mitarbeiter.kicktippTippPkt)) {
+                        $tipp.addClass('punkte-' + mitarbeiter.kicktippTippPkt);
+                        var $tippPunkte = $('<div />').html('+' + mitarbeiter.kicktippTippPkt + '<span class="visiblyhidden">+</span>').addClass('tipp oben punkte-' + mitarbeiter.kicktippTippPkt);
+                        $div.append($tippPunkte);
+                    }
                     $div.append($tipp);
                 }
 

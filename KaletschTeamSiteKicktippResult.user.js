@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Kaletsch Team Site Kicktipp Result
 // @namespace    http://www.kaletsch-medien.de/
-// @version      1.2
+// @version      1.3
 // @description  Zeigt aktuelle Kicktipp-Punkte auf Team-Seite, vergessene Tipps blinken (param game=1)
 // @updateURL    https://github.com/DerVO/KicktippResultTeamSite/raw/master/KaletschTeamSiteKicktippResult.user.js
 // @downloadURL  https://github.com/DerVO/KicktippResultTeamSite/raw/master/KaletschTeamSiteKicktippResult.user.js
@@ -13,7 +13,7 @@
 
 /*
 Unterstuetze URL Parameter
-nextgame=x - überschreibe Auto Erkennung für nächstes Spiel, x = (1..n)
+nextgame=[x,]y - überschreibe Auto Erkennung für Spieltag und Spiel, x = Spieltag (1..n), y = Spiel (1..n)
 dontblink=1 - roter Layer blinkt nicht
 hidepoints=1 - zeige nicht die Punkte
 hidenames=1 - blende die Namen aus
@@ -64,11 +64,22 @@ Beispiel: http://www.kaletsch-medien.de/uber-uns/?nextgame=1&hidepoints=1&hidena
     `;
 
     // read in url params
-    var override_next_game = parseInt(getUrlParameter('nextgame'));
     var hide_points = Boolean(parseInt(getUrlParameter('hidepoints')));
     var hide_names = Boolean(parseInt(getUrlParameter('hidenames')));
     var dont_blink = Boolean(parseInt(getUrlParameter('dontblink')));
     var distraction_free = Boolean(parseInt(getUrlParameter('distractionfree')));
+
+    var nextgame, override_spieltag, override_game;
+    if ($.type(nextgame = getUrlParameter('nextgame')) === 'string') {
+        var Parts = nextgame.split(',');
+        if (Parts.length == 2) {
+            override_spieltag = parseInt(Parts[0]);
+            override_game = parseInt(Parts[1]);
+        } else {
+            override_game = parseInt(Parts[0]);
+        }
+    }
+    console.log(override_spieltag, override_game);
 
     GM_addStyle(`
 		@keyframes blink {
@@ -163,7 +174,9 @@ Beispiel: http://www.kaletsch-medien.de/uber-uns/?nextgame=1&hidepoints=1&hidena
         }
     });
 
-    $.get("http://cors.io/?u=https://www.kicktipp.de/kaletsch/tippuebersicht", function(data) {
+    var url = "http://cors.io/?u=https%3A%2F%2Fwww.kicktipp.de%2Fkaletsch%2Ftippuebersicht";
+    if (override_spieltag !== undefined) url += '%3FtippspieltagIndex%3D' + override_spieltag;
+    $.get(url, function(data) {
         var $kicktipp = $(data);
 
         // get the gameList
@@ -187,7 +200,7 @@ Beispiel: http://www.kaletsch-medien.de/uber-uns/?nextgame=1&hidepoints=1&hidena
         Games.forEach(function(Game, idx) {
             if (nextGameIdx === undefined && !Game.spiel_abgeschlossen) {nextGameIdx = idx; nextGame = Games[nextGameIdx];}
         });
-        if (!isNaN(override_next_game)) {nextGameIdx = override_next_game - 1; nextGame = Games[nextGameIdx];}
+        if (!isNaN(override_game)) {nextGameIdx = override_game - 1; nextGame = Games[nextGameIdx];}
 
         // read in points zu mitarbeiterList
         var pktMin;

@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Kaletsch Team Site Kicktipp Result
 // @namespace    http://www.kaletsch-medien.de/
-// @version      1.6
+// @version      1.7
 // @description  Zeigt aktuelle Kicktipp-Punkte auf Team-Seite, vergessene Tipps blinken (param game=1)
 // @updateURL    https://github.com/DerVO/KicktippResultTeamSite/raw/master/KaletschTeamSiteKicktippResult.user.js
 // @downloadURL  https://github.com/DerVO/KicktippResultTeamSite/raw/master/KaletschTeamSiteKicktippResult.user.js
@@ -225,12 +225,18 @@ Beispiel: http://www.kaletsch-medien.de/uber-uns/?nextgame=1&hidepoints=1&hidena
             Games.push(Game);
         });
 
-        // get the next Game, get the current game
-        var showGameIdx, showGame;
+        // get the next Game to show
+        var showGameIdx, showGame,
+            gamesOnSpieltag = Games.length;
         Games.forEach(function(Game, idx) {
-            if (showGameIdx === undefined && !Game.spiel_abgeschlossen) {showGameIdx = idx; showGame = Games[showGameIdx];}
+            if (showGameIdx === undefined && !Game.spiel_abgeschlossen) showGameIdx = idx;
         });
-        if (!isNaN(override_game)) {showGameIdx = override_game - 1; showGame = Games[showGameIdx];}
+        if (!isNaN(override_game) && Games[override_game - 1] !== undefined) showGameIdx = override_game - 1;
+        if (showGameIdx === undefined) showGameIdx = gamesOnSpieltag - 1;
+        showGame = Games[showGameIdx];
+
+        // get the current Spieltag
+        var spieltag = parseInt($kicktipp.find('#tippspieltagIndex option:selected').val());
 
         // read in points zu mitarbeiterList
         var pktMin;
@@ -274,7 +280,14 @@ Beispiel: http://www.kaletsch-medien.de/uber-uns/?nextgame=1&hidepoints=1&hidena
 
         // Show game in title
         if (showGame !== undefined) {
-            var headline = showGame.teamA + ' - ' + showGame.teamB;
+            var prevGame = spieltag + ',' + showGameIdx;
+            if (showGameIdx < 1) prevGame = (spieltag - 1) + ',' + 'last';
+            var nextGame = spieltag + ',' + (showGameIdx+2);
+            if (showGameIdx+2 > gamesOnSpieltag) nextGame = (spieltag+1) + ',' + '1';
+            var headline = '';
+            headline += '<a href="?'+changeQueryString({game: prevGame})+'">&#x25C4;</a> ';
+            headline += showGame.teamA + ' - ' + showGame.teamB;
+            headline += ' <a href="?'+changeQueryString({game: nextGame})+'">&#x25BA;</a>';
             if (showGame.spiel_laeuft) {
                 headline += '<br /><span class="red">' + showGame.result + '</span>';
                 headline += '<br />(<span id="countdown" data-startzeit="' + showGame.termin + '"></span>)';
@@ -378,6 +391,21 @@ function getUrlParameter(sParam) {
             return sParameterName[1] === undefined ? true : sParameterName[1];
         }
     }
+}
+
+function changeQueryString(overrideParams) {
+    var sPageURL = decodeURIComponent(window.location.search.substring(1)),
+        sURLVariables = sPageURL.split('&'),
+        sParameter,
+        i;
+
+    var Params = {};
+    for (i = 0; i < sURLVariables.length; i++) {
+        sParameterName = sURLVariables[i].split('=');
+        Params[sParameterName[0]] = sParameterName[1];
+    }
+    $.extend(Params, overrideParams);
+    return $.param(Params);
 }
 
 function getTimeRemaining(endtime){

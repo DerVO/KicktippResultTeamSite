@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Kaletsch Team Site Kicktipp Result
 // @namespace    http://www.kaletsch-medien.de/
-// @version      1.5
+// @version      1.6
 // @description  Zeigt aktuelle Kicktipp-Punkte auf Team-Seite, vergessene Tipps blinken (param game=1)
 // @updateURL    https://github.com/DerVO/KicktippResultTeamSite/raw/master/KaletschTeamSiteKicktippResult.user.js
 // @downloadURL  https://github.com/DerVO/KicktippResultTeamSite/raw/master/KaletschTeamSiteKicktippResult.user.js
@@ -18,6 +18,7 @@ dontblink=1 - roter Layer blinkt nicht
 hidepoints=1 - zeige nicht die Punkte
 hidenames=1 - blende die Namen aus
 distractionfree=1 - blende andere Items aus
+fullwidth=1 - gehe auf volle Breite und zeige 6 pro Zeile
 Beispiel: http://www.kaletsch-medien.de/uber-uns/?nextgame=1&hidepoints=1&hidenames=1&dontblink=1&distractionfree=1
 */
 
@@ -64,10 +65,12 @@ Beispiel: http://www.kaletsch-medien.de/uber-uns/?nextgame=1&hidepoints=1&hidena
     `;
 
     // read in url params
+    var sort_by_pos = Boolean(parseInt(getUrlParameter('sort')));
     var hide_points = Boolean(parseInt(getUrlParameter('hidepoints')));
     var hide_names = Boolean(parseInt(getUrlParameter('hidenames')));
     var dont_blink = Boolean(parseInt(getUrlParameter('dontblink')));
     var distraction_free = Boolean(parseInt(getUrlParameter('distractionfree')));
+    var full_width = Boolean(parseInt(getUrlParameter('fullwidth')));
 
     var game_url, override_spieltag, override_game;
     if ($.type(game_url = getUrlParameter('game')) === 'string') {
@@ -161,6 +164,16 @@ Beispiel: http://www.kaletsch-medien.de/uber-uns/?nextgame=1&hidepoints=1&hidena
         `);
     }
 
+    // volle Breite und 6 pro Zeile, wenn fullwidth gesetzt ist
+    if (full_width) {
+        GM_addStyle(`
+            @media (min-width: 1200px) {
+                .container { width: 100%; }
+            }
+        `);
+        $('section#team div.col-md-3').addClass('col-lg-2');
+    }
+
     // Namen ausblenden, wenn hidenames gesetzt
     if (hide_names) {
         GM_addStyle(`
@@ -225,6 +238,7 @@ Beispiel: http://www.kaletsch-medien.de/uber-uns/?nextgame=1&hidepoints=1&hidena
         var tippsMissing = 0;
         $kicktipp.find("table.kicktipp-tabs.kicktipp-table-fixed tbody tr[class*='teilnehmer']").each(function() {
             var $tr = $(this);
+            var pos = parseInt($tr.find('td.pos').text());
             var name = $tr.find('td.mg_class').text();
             var pkt = parseInt($tr.find('td.pkt:last').text());
             var id = $(this).attr("class").match(/teilnehmer(\d+)/)[1];
@@ -239,6 +253,7 @@ Beispiel: http://www.kaletsch-medien.de/uber-uns/?nextgame=1&hidepoints=1&hidena
 
             mitarbeiterList.forEach(function(mitarbeiter) {
                 if (mitarbeiter.id == id) {
+                    mitarbeiter.kicktippPos = pos;
                     mitarbeiter.kicktippPkt = pkt;
                     mitarbeiter.kicktippName = name;
                     mitarbeiter.kicktippGetippt = getippt;
@@ -297,6 +312,9 @@ Beispiel: http://www.kaletsch-medien.de/uber-uns/?nextgame=1&hidepoints=1&hidena
             if (mitarbeiter) {
                 var img_height = $mitarbeiterDiv.find('div.responsive-image img').height();
 
+                // Position ablegen
+                $mitarbeiterDiv.data('pos', mitarbeiter.kicktippPos);
+
                 // Tipp-Vergessen-Marker einblenden
                 if (mitarbeiter.kicktippGetippt === false) {
                     $mitarbeiterDiv.find('div.responsive-image').append( $('<div/>').addClass('redLayer blink').css('height', img_height) );
@@ -328,6 +346,18 @@ Beispiel: http://www.kaletsch-medien.de/uber-uns/?nextgame=1&hidepoints=1&hidena
             } else {
                 //console.log('Mitarbeiter ' + name + ' in Tippspiel nicht gefunden. Graue sein Bild aus.');
                 $mitarbeiterDiv.find('div.responsive-image img').css('-webkit-filter', 'grayscale(80%)');
+            }
+
+            // Mitarbeiter nach Pos sortieren
+            if (sort_by_pos) {
+                var $section = $('section#team');
+                var $mitarbeiter = $section.children('div.col-md-3');
+                $mitarbeiter.detach().sort(function(mitarbeiterA, mitarbeiterB) {
+                    var posA = $(mitarbeiterA).data('pos'), posB = $(mitarbeiterB).data('pos');
+                    if (posA === undefined) posA = 999;
+                    if (posB === undefined) posB = 999;
+                    return posA - posB;
+                }).appendTo($section);
             }
         });
 

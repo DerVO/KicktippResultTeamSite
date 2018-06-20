@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Kaletsch Team Site Kicktipp Result
 // @namespace    http://www.kaletsch-medien.de/
-// @version      2018.1
+// @version      2018.2
 // @description  Zeigt aktuelle Kicktipp-Punkte auf Team-Seite, vergessene Tipps blinken (param game=1)
 // @updateURL    https://github.com/DerVO/KicktippResultTeamSite/raw/master/KaletschTeamSiteKicktippResult.user.js
 // @downloadURL  https://github.com/DerVO/KicktippResultTeamSite/raw/master/KaletschTeamSiteKicktippResult.user.js
@@ -207,9 +207,7 @@ Beispiel: http://www.kaletsch-medien.de/uber-uns/?nextgame=1&hidepoints=1&hidena
         }
     });
 
-    // https://crossorigin.me/ ??
-    var url = "https://cors.io/?u=https%3A%2F%2Fwww.kicktipp.de%2Fkaletsch%2Ftippuebersicht";
-    url = "https://www.kicktipp.de/kaletsch/tippuebersicht";
+    var url = "https://cors.io/?https://www.kicktipp.de/kaletsch/tippuebersicht";
     if (override_spieltag !== undefined) url += '%3FtippspieltagIndex%3D' + override_spieltag;
     window.addEventListener('load', function() {
     $.get(url, function(data) {

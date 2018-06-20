@@ -1,13 +1,13 @@
 // ==UserScript==
 // @name         Kaletsch Team Site Kicktipp Result
 // @namespace    http://www.kaletsch-medien.de/
-// @version      1.7
+// @version      2018.1
 // @description  Zeigt aktuelle Kicktipp-Punkte auf Team-Seite, vergessene Tipps blinken (param game=1)
 // @updateURL    https://github.com/DerVO/KicktippResultTeamSite/raw/master/KaletschTeamSiteKicktippResult.user.js
 // @downloadURL  https://github.com/DerVO/KicktippResultTeamSite/raw/master/KaletschTeamSiteKicktippResult.user.js
 // @homepage     https://github.com/DerVO/KicktippResultTeamSite
 // @author       DerVO
-// @match        http://www.kaletsch-medien.de/uber-uns/*
+// @match        *://www.kaletsch-medien.de/uber-uns/*
 // @grant        GM_addStyle
 // ==/UserScript==
 
@@ -28,40 +28,43 @@ Beispiel: http://www.kaletsch-medien.de/uber-uns/?nextgame=1&hidepoints=1&hidena
     'use strict';
 
     var mitarbeiterString = `
-		14402457,Björn Gießler
-		14406833,Gerald Kühn
-		14406880,Michael Brinkmann
-		14407364,Peter Kaletsch
-		14407375,Clarissa Niediek
-		14407555,Klaus Meyer
-		14433437,Joachim Lindner
-		14464419,Nicole Gießler
-		14509941,Gilda Sperling
-		14514901,Christian Kaletsch
-		14516161,Christian Philipp
-		14578860,Tobias Brunner
-		14681436,Michael Hänsch
-		14915694,Anna Schoberth
-		14920323,Thomas König
-		14924912,Michael Liebler
-		14972326,Martin Engelhardt
-		15086639,Alexander Klose
-		15087724,Elizaveta Shlosberg
-		15087990,Regine Kaletsch
-		15088741,Felix Sembach
-		15223647,Marion Lämmermann
-		15232387,Morteza Biglari
-		15245408,Karen Schlögl
-		15271647,Michael Kaletsch
-		15553500,Irmgard Baratto
-		15572724,Jonas Beez
-		15597870,Antonia Hoepffner
-		15700377,Dineo Zeil
-		15721575,Shawn Fütterer
-		15793081,Isabell Schindler
-		15876059,Frank Kretschmann
-		15967985,Andrea Hänsch
-        16223811,Patrick Stieber
+		21675931,Andreas Röder
+		21675764,Peter Kaletsch
+		21908226,Anna Schoberth
+		22821693,Clarissa Niediek
+		21649512,Björn Gießler
+		21671860,Christian Philipp
+		21674868,Felix Sembach
+		21671110,Klaus Meyer
+		21671927,Lisa Lindner
+		21669717,Michael Brinkmann
+		21674755,Michael Hänsch
+		22557192,Morteza Biglari
+		21676350,Michael Kaletsch
+		22732966,Andrea Hänsch
+		21681471,Patrick Stieber
+		21700429,Isabell Schindler
+		21704154,Stefano Deviggiano
+		21675890,Stefanie Scholz
+		21975445,Jerome Kiausch
+		22842472,Nicole Gießler
+		22413942,Regine Kaletsch
+		21784361,Christian Kaletsch
+		22894665,Alexander Klose
+		21955612,Christoph Muster
+		21701651,Karen Schlögl
+		21690349,Joachim Lindner
+		22854593,Joshua Greene
+        23385048,Michael Liebler
+        23582641,Miriam Heine
+        23784000,Jonas Beez
+        24071502,Elizaveta Shlosberg
+        24228308,Irmgard Baratto
+        24229136,Tobias Brunner
+        22854593,Lena Walker
+        24480947,Marion Lämmermann
+        24708029,Frank Kretschmann
+        24718109,Miriam Makanga
     `;
 
     // read in url params
@@ -204,14 +207,17 @@ Beispiel: http://www.kaletsch-medien.de/uber-uns/?nextgame=1&hidepoints=1&hidena
         }
     });
 
-    var url = "http://cors.io/?u=https%3A%2F%2Fwww.kicktipp.de%2Fkaletsch%2Ftippuebersicht";
+    // https://crossorigin.me/ ??
+    var url = "https://cors.io/?u=https%3A%2F%2Fwww.kicktipp.de%2Fkaletsch%2Ftippuebersicht";
+    url = "https://www.kicktipp.de/kaletsch/tippuebersicht";
     if (override_spieltag !== undefined) url += '%3FtippspieltagIndex%3D' + override_spieltag;
+    window.addEventListener('load', function() {
     $.get(url, function(data) {
         var $kicktipp = $(data);
 
         // get the gameList
         var Games = [];
-        $kicktipp.find("table.kicktipp-tabs.nw:not(.kicktipp-table-fixed) tbody tr").each(function() {
+        $kicktipp.find("#spielplanSpiele tbody tr").each(function() {
             var $gameTr = $(this);
             var Game = {
                 termin: $.trim($(this).find('td:eq(0)').text()),
@@ -236,15 +242,16 @@ Beispiel: http://www.kaletsch-medien.de/uber-uns/?nextgame=1&hidepoints=1&hidena
         showGame = Games[showGameIdx];
 
         // get the current Spieltag
-        var spieltag = parseInt($kicktipp.find('#tippspieltagIndex option:selected').val());
+        var spieltagUrl = $kicktipp.find('.prevnextTitle a').attr('href');
+        var spieltag = parseInt(spieltagUrl.match(/spieltagIndex=([0-9]+)/)[1]);
 
         // read in points zu mitarbeiterList
         var pktMin;
         var pktMax;
         var tippsMissing = 0;
-        $kicktipp.find("table.kicktipp-tabs.kicktipp-table-fixed tbody tr[class*='teilnehmer']").each(function() {
+        $kicktipp.find("#ranking tbody tr[class*='teilnehmer']").each(function() {
             var $tr = $(this);
-            var pos = parseInt($tr.find('td.pos').text());
+            var pos = parseInt($tr.find('td.position').text());
             var name = $tr.find('td.mg_class').text();
             var pkt = parseInt($tr.find('td.pkt:last').text());
             var id = $(this).attr("class").match(/teilnehmer(\d+)/)[1];
@@ -324,6 +331,7 @@ Beispiel: http://www.kaletsch-medien.de/uber-uns/?nextgame=1&hidepoints=1&hidena
 
             if (mitarbeiter) {
                 var img_height = $mitarbeiterDiv.find('div.responsive-image img').height();
+                console.log(img_height);
 
                 // Position ablegen
                 $mitarbeiterDiv.data('pos', mitarbeiter.kicktippPos);
@@ -375,7 +383,7 @@ Beispiel: http://www.kaletsch-medien.de/uber-uns/?nextgame=1&hidepoints=1&hidena
         });
 
     });
-
+    }, false);
 })();
 
 function getUrlParameter(sParam) {

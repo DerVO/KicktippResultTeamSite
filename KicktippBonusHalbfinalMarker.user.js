@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Kicktipp Bonus Marker
 // @namespace    http://www.kaletsch-medien.de/
-// @version      2018.2
+// @version      2018.2.1
 // @description  Markiert die Halbfinal Bonustipps farbig
 // @updateURL    https://github.com/DerVO/KicktippResultTeamSite/raw/master/KicktippBonusHalbfinalMarker.user.js
 // @downloadURL  https://github.com/DerVO/KicktippResultTeamSite/raw/master/KicktippBonusHalbfinalMarker.user.js
@@ -81,7 +81,7 @@
             $td.wrapInner("<span class='tag'></span>");
             var $wrapper = $td.find('span.tag');
 
-            if ($tds_tor.is($td) && tore[ctry] !== undefined) $wrapper.append(' <span class="tore">' + '?'.repeat(tore[ctry]) + '</span>'); // Torschuethenkoenig
+            if ($tds_tor.is($td) && tore[ctry] !== undefined) $wrapper.append(' <span class="tore">' + '⚽'.repeat(tore[ctry]) + '</span>'); // Torschuethenkoenig
 
             if ($td.hasClass('f')) return; // td.f ist ausgeschieden
 

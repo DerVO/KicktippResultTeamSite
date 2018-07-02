@@ -1,12 +1,12 @@
 // ==UserScript==
-// @name         Kicktipp Halbfinal Marker
+// @name         Kicktipp Bonus Marker
 // @namespace    http://www.kaletsch-medien.de/
-// @version      0.1
+// @version      2018.1
 // @description  Markiert die Halbfinal Bonustipps farbig
 // @updateURL    https://github.com/DerVO/KicktippResultTeamSite/raw/master/KicktippBonusHalbfinalMarker.user.js
 // @downloadURL  https://github.com/DerVO/KicktippResultTeamSite/raw/master/KicktippBonusHalbfinalMarker.user.js
 // @author       DerVO
-// @match        https://www.kicktipp.de/kaletsch/tippuebersicht*tippspieltagIndexTippspieltageTab=6
+// @match        https://www.kicktipp.de/kaletsch/tippuebersicht*bonus=true*
 // @grant        GM_addStyle
 // @require http://code.jquery.com/jquery-latest.js
 // ==/UserScript==
@@ -17,23 +17,32 @@
     'use strict';
 
     var col = {
-        CH: 'h1',
-        POL: 'h1',
-        KRO: 'h1',
+        URU: 'h1',
         POR: 'h1',
-        WAL: 'h2',
-        NIR: 'h2',
-        UNG: 'h2',
+        FRA: 'h1',
+        ARG: 'h1',
+        BRA: 'h2',
+        MEX: 'h2',
         BEL: 'h2',
-        DEU: 'h3',
-        SLO: 'h3',
-        ITA: 'h3',
-        SPA: 'h3',
-        FRA: 'h4',
-        IRL: 'h4',
-        ENG: 'h4',
-        ISL: 'h4'
+        JPN: 'h2',
+        ESP: 'h3',
+        RUS: 'h3',
+        CRO: 'h3',
+        DEN: 'h3',
+        SWE: 'h4',
+        CH: 'h4',
+        KOL: 'h4',
+        ENG: 'h4'
     };
+
+    var tore = {
+        BRA: 2,
+        FRA: 1,
+        ESP: 3,
+        KOL: 2,
+        ENG: 5,
+        POR: 4
+    }
 
     GM_addStyle(`
 		.tag {
@@ -43,30 +52,47 @@
             color:white;
             background-color:#BBBBBB;
         }
+        .tore {font-weight:normal}
         .tag.h1 {background-color:#AA3939}
         .tag.h2 {background-color:#AA6C39}
         .tag.h3 {background-color:#0D4D4D}
         .tag.h4 {background-color:#2D882D}
+        .tag.im_rennen {background-color:#50aad7}
     `);
 
-    $('table.nw.kicktipp-tabs.kicktipp-table-fixed tbody tr.kicktipp-toolbar-activator').each(function() {
+    $('table#ranking tbody tr.teilnehmer').each(function() {
         // cycle over every relevant tr
-        var $tr = $(this);
-        var $tds = $tr.find('td:nth-child(n+5):nth-last-child(n+5)');
+        var $tr = $(this),
+            $tds = $tr.find('td.ereignis'),
+            $tds_semifinals = $tds.filter('.ereignis1, .ereignis2, .ereignis3, .ereignis4'),
+            $tds_tor = $tds.filter('.ereignis0'),
+            $tds_tor_wm = $tds.filter('.ereignis0, .ereignis5'),
+            count = 0;
+
+        // === Spalten markieren ===
         $tds.each(function() {
-            var $acronym = $(this).find('acronym');
-            var ctry = $.trim($acronym.text());
-            $acronym.addClass('tag');
-            if (col[ctry] !== undefined) $acronym.addClass(col[ctry]);
+            var $td = $(this),
+                ctry = $.trim($td.text());
+            if (ctry == '') return; // nicht getippt
+
+            $td.wrapInner("<span class='tag'></span>");
+            var $wrapper = $td.find('span.tag');
+            if ($td.hasClass('f')) return; // td.f ist ausgeschieden
+
+            if ($tds_semifinals.is($td) && col[ctry] !== undefined) $wrapper.addClass(col[ctry]); // Halbfinals
+            if ($tds_tor_wm.is($td) && col[ctry] !== undefined) $wrapper.addClass('im_rennen'); // Wer ist noch im Rennen um Tor und WM
+            if ($tds_tor.is($td) && tore[ctry] !== undefined) $wrapper.append(' <span class="tore">' + '?'.repeat(tore[ctry]) + '</span>'); // Torschuethenkoenig
         });
-        var count = 0;
-        if ($tds.find('.h1').length) count++;
-        if ($tds.find('.h2').length) count++;
-        if ($tds.find('.h3').length) count++;
-        if ($tds.find('.h4').length) count++;
+
+        // === Punkte zaehlen ===
+        // Halbfinals
+        if ($tds_semifinals.find('.h1').length) count++;
+        if ($tds_semifinals.find('.h2').length) count++;
+        if ($tds_semifinals.find('.h3').length) count++;
+        if ($tds_semifinals.find('.h4').length) count++;
         // Torschuetzenkoenig und EM
-        count += $tr.find('td:nth-child(4) span.t, td:nth-child(9) span.t').length; // enthalten vierte und 9te Spalte ein span.t?
+        count += $tds_tor_wm.filter(':not(.f)').length; // td.f ist ausgeschieden
         // moegliche Punkte in Spalte Bonus speichern
-        $tr.find('td:nth-child(10)').text(count * 2);
+        $tr.find('td.bonus').text('(+' + count * 2 + ')');
     });
 })();

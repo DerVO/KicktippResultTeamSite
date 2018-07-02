@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Kicktipp Bonus Marker
 // @namespace    http://www.kaletsch-medien.de/
-// @version      2018.1
+// @version      2018.2
 // @description  Markiert die Halbfinal Bonustipps farbig
 // @updateURL    https://github.com/DerVO/KicktippResultTeamSite/raw/master/KicktippBonusHalbfinalMarker.user.js
 // @downloadURL  https://github.com/DerVO/KicktippResultTeamSite/raw/master/KicktippBonusHalbfinalMarker.user.js
@@ -37,11 +37,14 @@
 
     var tore = {
         BRA: 2,
-        FRA: 1,
-        ESP: 3,
         KOL: 2,
         ENG: 5,
-        POR: 4
+        FRA: 3, // nach 8el
+        // ausgeschieden
+        DEU: 1,
+        SRB: 1,
+        ESP: 3,
+        POR: 4,
     }
 
     GM_addStyle(`
@@ -77,11 +80,13 @@
 
             $td.wrapInner("<span class='tag'></span>");
             var $wrapper = $td.find('span.tag');
+
+            if ($tds_tor.is($td) && tore[ctry] !== undefined) $wrapper.append(' <span class="tore">' + '?'.repeat(tore[ctry]) + '</span>'); // Torschuethenkoenig
+
             if ($td.hasClass('f')) return; // td.f ist ausgeschieden
 
             if ($tds_semifinals.is($td) && col[ctry] !== undefined) $wrapper.addClass(col[ctry]); // Halbfinals
             if ($tds_tor_wm.is($td) && col[ctry] !== undefined) $wrapper.addClass('im_rennen'); // Wer ist noch im Rennen um Tor und WM
-            if ($tds_tor.is($td) && tore[ctry] !== undefined) $wrapper.append(' <span class="tore">' + '?'.repeat(tore[ctry]) + '</span>'); // Torschuethenkoenig
         });
 
         // === Punkte zaehlen ===

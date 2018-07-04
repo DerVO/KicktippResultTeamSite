@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Kicktipp Bonus Marker
 // @namespace    http://www.kaletsch-medien.de/
-// @version      2018.2.1
+// @version      2018.3
 // @description  Markiert die Halbfinal Bonustipps farbig
 // @updateURL    https://github.com/DerVO/KicktippResultTeamSite/raw/master/KicktippBonusHalbfinalMarker.user.js
 // @downloadURL  https://github.com/DerVO/KicktippResultTeamSite/raw/master/KicktippBonusHalbfinalMarker.user.js
@@ -37,14 +37,14 @@
 
     var tore = {
         BRA: 2,
-        KOL: 2,
-        ENG: 5,
-        FRA: 3, // nach 8el
+        ENG: 6,
+        FRA: 3,
         // ausgeschieden
         DEU: 1,
         SRB: 1,
         ESP: 3,
         POR: 4,
+        KOL: 3,
     }
 
     GM_addStyle(`

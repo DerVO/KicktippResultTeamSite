@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Kicktipp Bonus Marker
 // @namespace    http://www.kaletsch-medien.de/
-// @version      2018.3
+// @version      2018.4
 // @description  Markiert die Halbfinal Bonustipps farbig
 // @updateURL    https://github.com/DerVO/KicktippResultTeamSite/raw/master/KicktippBonusHalbfinalMarker.user.js
 // @downloadURL  https://github.com/DerVO/KicktippResultTeamSite/raw/master/KicktippBonusHalbfinalMarker.user.js
@@ -36,15 +36,15 @@
     };
 
     var tore = {
-        BRA: 2,
+        // final
+        FRA: 4,
         ENG: 6,
-        FRA: 3,
-        // ausgeschieden
         DEU: 1,
         SRB: 1,
         ESP: 3,
         POR: 4,
         KOL: 3,
+        BRA: 2,
     }
 
     GM_addStyle(`
@@ -54,6 +54,9 @@
             font-weight:bold;
             color:white;
             background-color:#BBBBBB;
+        }
+        sub.p {
+            font-weight:bold;
         }
         .tore {font-weight:normal}
         .tag.h1 {background-color:#AA3939}
@@ -75,10 +78,14 @@
         // === Spalten markieren ===
         $tds.each(function() {
             var $td = $(this),
-                ctry = $.trim($td.text());
+                ctry;
+            ctry = $.trim($td.clone().children().remove().end().text()); // text content w/o child elements: https://stackoverflow.com/a/8851526/1037640
             if (ctry == '') return; // nicht getippt
 
-            $td.wrapInner("<span class='tag'></span>");
+            // if ($tds_semifinals.is($td)) return; // Halbfinaltipps nicht markieren
+
+            //$td.wrapInner("<span class='tag'></span>"); // wrap the whole content
+            $td.contents().filter(function(){return this.nodeType === 3}).wrap("<span class='tag'></span>"); // wrap only text content
             var $wrapper = $td.find('span.tag');
 
             if ($tds_tor.is($td) && tore[ctry] !== undefined) $wrapper.append(' <span class="tore">' + '⚽'.repeat(tore[ctry]) + '</span>'); // Torschuethenkoenig
@@ -98,6 +105,6 @@
         // Torschuetzenkoenig und EM
         count += $tds_tor_wm.filter(':not(.f)').length; // td.f ist ausgeschieden
         // moegliche Punkte in Spalte Bonus speichern
-        $tr.find('td.bonus').text('(+' + count * 2 + ')');
+        $tr.find('td.bonus').append(' (+' + count * 2 + ')');
     });
 })();

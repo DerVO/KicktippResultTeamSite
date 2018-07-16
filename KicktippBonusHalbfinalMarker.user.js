@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Kicktipp Bonus Marker
 // @namespace    http://www.kaletsch-medien.de/
-// @version      2018.4
+// @version      2018.4.1
 // @description  Markiert die Halbfinal Bonustipps farbig
 // @updateURL    https://github.com/DerVO/KicktippResultTeamSite/raw/master/KicktippBonusHalbfinalMarker.user.js
 // @downloadURL  https://github.com/DerVO/KicktippResultTeamSite/raw/master/KicktippBonusHalbfinalMarker.user.js
@@ -98,12 +98,12 @@
 
         // === Punkte zaehlen ===
         // Halbfinals
-        if ($tds_semifinals.find('.h1').length) count++;
-        if ($tds_semifinals.find('.h2').length) count++;
-        if ($tds_semifinals.find('.h3').length) count++;
-        if ($tds_semifinals.find('.h4').length) count++;
+        if ($tds_semifinals.find('.h1 ~ :not(.p)').length) count++;
+        if ($tds_semifinals.find('.h2 ~ :not(.p)').length) count++;
+        if ($tds_semifinals.find('.h3 ~ :not(.p)').length) count++;
+        if ($tds_semifinals.find('.h4 ~ :not(.p)').length) count++;
         // Torschuetzenkoenig und EM
-        count += $tds_tor_wm.filter(':not(.f)').length; // td.f ist ausgeschieden
+        count += $tds_tor_wm.filter(':not(.f)').filter(':not(:has(.p))').length; // td.f ist ausgeschieden
         // moegliche Punkte in Spalte Bonus speichern
         $tr.find('td.bonus').append(' (+' + count * 2 + ')');
     });
